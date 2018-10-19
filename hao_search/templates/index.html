@@ -1,0 +1,155 @@
+﻿<!DOCTYPE html>
+<html lang="zh">
+{% load staticfiles %}
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hao-search</title>
+<link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.css'%}">
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+<link rel="stylesheet" href="{% static 'css/style1.css' %}">
+<link rel="stylesheet" href="{% static 'css/index.css' %}">
+</head>
+<body>
+<div id="top-image">
+  <div id="content" class="container center-block">
+    <div class="jumbotron">
+      <div class="container">
+        <h1 style="text-align: center; margin-bottom: 20px">HaoSh</h1>
+{#        <div class="nav ue-clear">#}
+{#            <ul class="searchList">#}
+{#                <li class="searchItem current" data-type="article">文章</li>#}
+{#                <li class="searchItem" data-type="question">问答</li>#}
+{#                <li class="searchItem" data-type="job">职位</li>#}
+{#            </ul>#}
+{#        </div>#}
+        <div class="input-group input-group-lg inputArea">
+            <input type="text" style="font-size: 16px" class="form-control" placeholder="please enter" aria-describedby="sizing-addon1">
+            <span class="input-group-btn">
+            <button class="btn btn-default"  type="button" onclick="add_search()">Search</button>
+            </span>
+            <ul class="dataList">
+            </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+<script src="{% static 'js/jquery.min.js' %}"></script>
+<script src="{% static 'js/ios-parallax.js' %}"></script>
+<script src="{% static 'js/global.js' %}"></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+      $('#top-image').iosParallax({
+        movementFactor: 50
+      });
+    });
+</script>
+<script type="text/javascript">
+    var suggest_url = "{% url "suggest" %}";
+    var search_url = "{% url "search" %}";
+
+    $('.searchList').on('click', '.searchItem', function(){
+		$('.searchList .searchItem').removeClass('current');
+		$(this).addClass('current');
+	});
+
+    function removeByValue(arr, val) {
+      for(var i=0; i<arr.length; i++) {
+        if(arr[i] == val) {
+          arr.splice(i, 1);
+          break;
+        }
+      }
+    }
+
+    $(function(){
+        $('.form-control').bind(' input propertychange ',function(){
+            var text = $(this).val();
+            var html = ""
+            $.ajax({
+                cache: false,
+                type: 'get',
+                dataType:'json',
+                url:suggest_url+"?s="+text,
+                async: true,
+                success: function(data) {
+                    for (var i=0;i<data.length;i++){
+                        html += '<li><a href="'+search_url+'?q='+data[i]+'">'+data[i]+'</a></li>'
+                    }
+                    $(".dataList").html("");
+                    $(".dataList").append(html);
+                    if (data.length == 0){
+                        $('.dataList').hide()
+                    }else {
+                        $('.dataList').show()
+                    }
+                }
+            });
+        } );
+    });
+
+    hideElement($('.dataList'), $('.form-control'));
+</script>
+<script>
+    var searchArr;
+    //定义一个search的，判断浏览器有无数据存储（搜索历史）
+    if(localStorage.search){
+    //如果有，转换成 数组的形式存放到searchArr的数组里（localStorage以字符串的形式存储，所以要把它转换成数组的形式）
+        searchArr= localStorage.search.split(",")
+    }else{
+    //如果没有，则定义searchArr为一个空的数组
+        searchArr = [];
+    }
+    //把存储的数据显示出来作为搜索历史
+    MapSearchArr();
+
+    function add_search(){
+        var val = $(".form-control").val();
+        if (val.length>=2){
+            //点击搜索按钮时，去重
+            KillRepeat(val);
+            //去重后把数组存储到浏览器localStorage
+            localStorage.search = searchArr;
+            //然后再把搜索内容显示出来
+            MapSearchArr();
+        }
+
+        window.location.href=search_url+'?q='+val
+
+    }
+
+    function MapSearchArr(){
+        var tmpHtml = "";
+        var arrLen = 0
+        if (searchArr.length >= 5){
+            arrLen = 5
+        }else {
+            arrLen = searchArr.length
+        }
+        for (var i=0;i<arrLen;i++){
+            tmpHtml += '<a href="'+search_url+'?q='+searchArr[i]+'">'+searchArr[i]+'</a>'
+        }
+        $(".mysearch .all-search").html(tmpHtml);
+    }
+    //去重
+    function KillRepeat(val){
+        var kill = 0;
+        for (var i=0;i<searchArr.length;i++){
+            if(val===searchArr[i]){
+                kill ++;
+            }
+        }
+        if(kill<1){
+            searchArr.unshift(val);
+        }else {
+            removeByValue(searchArr, val)
+            searchArr.unshift(val)
+        }
+    }
+
+
+</script>
+</html>
